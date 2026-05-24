@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>ServiceTrack DX Enterprise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .login-split { background: linear-gradient(135deg, #004085 0%, #002244 100%); }
+        .diaco-alert { animation: pulse 2s infinite; border: 2px solid #ef4444 !important; }
+        @keyframes pulse { 0%, 100% { background: #fff; } 50% { background: #fee2e2; } }
+    </style>
+</head>
+<body class="bg-[#F9FBFF]">
+
+    <div id="login-screen" class="fixed inset-0 flex flex-col md:flex-row z-50">
+        <div class="hidden md:flex md:w-3/5 login-split items-center justify-center text-white text-center">
+            <div><h1 class="text-6xl font-black italic mb-4">ServiceTrack DX</h1><p class="uppercase tracking-widest opacity-60">Enterprise ERP</p></div>
+        </div>
+        <div class="w-full md:w-2/5 bg-white flex items-center justify-center p-12 text-center">
+            <div class="w-full max-w-sm">
+                <h2 class="text-3xl font-black mb-8">Acceso al Sistema</h2>
+                <div class="space-y-4">
+                    <button onclick="openAuth('asesor')" class="w-full p-5 border-2 rounded-2xl font-bold flex justify-between"><span>Asesor</span><i class="fas fa-store"></i></button>
+                    <button onclick="openAuth('tecnico')" class="w-full p-5 border-2 rounded-2xl font-bold flex justify-between"><span>Técnico</span><i class="fas fa-tools"></i></button>
+                    <button onclick="openAuth('gerencia')" class="w-full p-5 bg-[#004085] text-white rounded-2xl font-bold flex justify-between"><span>Gerencia</span><i class="fas fa-lock"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="auth-modal" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center z-[60] backdrop-blur-md">
+        <div class="bg-white p-10 rounded-[3rem] w-full max-w-sm">
+            <h2 class="text-xl font-black mb-6 uppercase text-center text-[#004085]">Autenticación</h2>
+            <input type="text" id="user" placeholder="Usuario" class="w-full p-4 bg-slate-100 rounded-2xl mb-4 outline-none font-bold">
+            <input type="password" id="pass" placeholder="Contraseña" class="w-full p-4 bg-slate-100 rounded-2xl mb-6 outline-none font-bold">
+            <button onclick="login()" class="w-full bg-[#004085] text-white py-4 rounded-2xl font-black uppercase">Entrar</button>
+            <button onclick="document.getElementById('auth-modal').style.display='none'" class="block w-full mt-4 text-[10px] font-bold text-slate-400">CANCELAR</button>
+        </div>
+    </div>
+
+    <div id="app-content" class="hidden min-h-screen flex flex-col">
+        <nav class="bg-[#004085] text-white p-4 px-10 flex justify-between items-center shadow-lg relative">
+            <h2 class="font-black italic text-xl">ST-DX</h2>
+            <div class="flex items-center space-x-6">
+                <div class="relative cursor-pointer" onclick="toggleNotif()">
+                    <i class="fas fa-bell text-xl"></i>
+                    <span id="notif-badge" class="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-black w-4 h-4 rounded-full flex items-center justify-center hidden">0</span>
+                    <div id="notif-panel" class="absolute right-0 mt-4 w-64 bg-white text-black shadow-xl rounded-xl hidden flex flex-col max-h-64 overflow-y-auto z-50"></div>
+                </div>
+                <span id="user-display" class="text-[10px] font-black uppercase bg-orange-400 px-3 py-1 rounded-full"></span>
+                <button onclick="location.reload()" class="text-xs font-bold underline">CERRAR SESIÓN</button>
+            </div>
+        </nav>
+
+        <main class="p-8 container mx-auto">
+            <section id="view-asesor" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white p-10 rounded-[3rem] shadow-sm border border-slate-100">
+                    <h3 class="text-2xl font-black text-[#004085] mb-8 uppercase">Recepción de Equipo</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <input id="c-nom" type="text" placeholder="Nombre del Cliente" class="p-4 bg-slate-50 rounded-2xl font-bold">
+                        <input id="c-tel" type="text" placeholder="Número de WhatsApp" class="p-4 bg-slate-50 rounded-2xl font-bold">
+                        <input id="c-email" type="email" placeholder="Correo Electrónico (Para envío de comprobante)" class="p-4 bg-slate-50 rounded-2xl font-bold col-span-2">
+                        <input id="c-mod" type="text" placeholder="Modelo del Equipo" class="p-4 bg-slate-50 rounded-2xl font-bold">
+                        <input id="c-ser" type="text" placeholder="Número de Serie" class="p-4 bg-slate-50 rounded-2xl font-bold">
+                        <textarea id="c-fal" placeholder="Descripción detallada de la falla reportada..." class="p-4 bg-slate-50 rounded-2xl font-bold col-span-2 h-24"></textarea>
+                    </div>
+                    <button onclick="saveTicket()" class="w-full mt-8 bg-[#004085] text-white py-5 rounded-3xl font-black uppercase shadow-xl hover:bg-blue-900 transition">Registrar Ingreso Oficial</button>
+                </div>
+                <div class="bg-white p-8 rounded-[3rem] flex flex-col items-center justify-center relative border border-slate-100">
+                    <i class="fas fa-camera text-4xl text-slate-200 mb-2"></i>
+                    <p class="text-[10px] font-black text-slate-400 uppercase">Fotografía del Equipo</p>
+                    <input type="file" id="file-input" onchange="preview(event)" multiple class="absolute inset-0 opacity-0 cursor-pointer">
+                    <div id="img-prev" class="mt-4 flex flex-wrap gap-2"></div>
+                </div>
+            </section>
+
+            <section id="view-tecnico" class="hidden space-y-6">
+                <h3 class="text-2xl font-black text-[#004085] uppercase">Panel Técnico de Reparaciones</h3>
+                <div id="taller-grid" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+            </section>
+
+            <section id="view-gerencia" class="hidden space-y-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-l-8 border-blue-600"><p class="text-[10px] font-black text-slate-400 uppercase">Órdenes Activas</p><h4 id="st-tot" class="text-4xl font-black">0</h4></div>
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-l-8 border-green-500"><p class="text-[10px] font-black text-slate-400 uppercase">Ingresos Facturados</p><h4 id="st-din" class="text-4xl font-black text-green-600">Q0</h4></div>
+                    <div class="bg-white p-8 rounded-3xl shadow-sm border-l-8 border-red-600"><p class="text-[10px] font-black text-red-600 uppercase">Riesgo Operativo (DIACO)</p><h4 id="st-dia" class="text-4xl font-black text-red-600">0</h4></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-3xl shadow-sm"><canvas id="chartEstados"></canvas></div>
+                    <div class="bg-white p-6 rounded-3xl shadow-sm overflow-y-auto h-64" id="admin-list"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="diag-modal" class="fixed inset-0 bg-slate-900/90 hidden items-center justify-center z-[70] backdrop-blur-xl p-6">
+        <div class="bg-white rounded-[3rem] w-full max-w-lg p-10">
+            <h3 id="diag-id" class="text-xl font-black text-[#004085] mb-4 uppercase"></h3>
+            <textarea id="d-hall" placeholder="Detalle del Diagnóstico Técnico..." class="w-full p-4 bg-slate-50 rounded-2xl mb-2 font-bold h-20 outline-none"></textarea>
+            <textarea id="d-reps" placeholder="Detalle de Repuestos..." class="w-full p-4 bg-slate-50 rounded-2xl mb-4 font-bold h-20 outline-none border border-slate-200"></textarea>
+            <div class="grid grid-cols-2 gap-4 mb-6 text-center">
+                <div><label class="text-[9px] font-black uppercase block">Costo Mano de Obra</label><input id="d-mo" type="number" value="0" class="w-full bg-slate-50 p-3 rounded-xl text-center font-bold"></div>
+                <div><label class="text-[9px] font-black uppercase block">Costo Repuestos</label><input id="d-rep" type="number" value="0" class="w-full bg-slate-50 p-3 rounded-xl text-center font-bold"></div>
+            </div>
+            <button onclick="sendBudget()" class="w-full bg-green-600 text-white py-5 rounded-3xl font-black uppercase shadow-xl hover:bg-green-700 transition">Enviar Notificación a Cliente</button>
+            <button onclick="document.getElementById('diag-modal').style.display='none'" class="block w-full mt-4 text-xs font-bold text-slate-400">CANCELAR</button>
+        </div>
+    </div>
+
+    <script>
+        let curRole = ""; let selTicket = null; let notifInterval;
+
+        function openAuth(r) { curRole = r; document.getElementById('auth-modal').style.display = 'flex'; }
+        
+        function login() {
+            fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user: document.getElementById('user').value, pass: document.getElementById('pass').value, role: curRole }) })
+            .then(res => res.json()).then(data => {
+                if(data.success) {
+                    document.getElementById('login-screen').classList.add('hidden'); document.getElementById('auth-modal').style.display = 'none';
+                    document.getElementById('app-content').classList.remove('hidden'); document.getElementById('user-display').innerText = `${data.usuario.nombre_completo} | ${curRole}`;
+                    document.querySelectorAll('section').forEach(s => s.classList.add('hidden')); document.getElementById('view-' + curRole).classList.remove('hidden');
+                    
+                    startNotifications();
+                    if(curRole === 'tecnico') loadTaller(); 
+                    if(curRole === 'gerencia') loadAdmin();
+                } else alert("Acceso Denegado. Verifique sus credenciales.");
+            });
+        }
+
+        function startNotifications() { fetchNotifs(); notifInterval = setInterval(fetchNotifs, 10000); }
+        function fetchNotifs() {
+            fetch('/api/notificaciones/' + curRole).then(res => res.json()).then(data => {
+                const badge = document.getElementById('notif-badge');
+                if(data.length > 0) { badge.innerText = data.length; badge.classList.remove('hidden'); } else { badge.classList.add('hidden'); }
+                
+                document.getElementById('notif-panel').innerHTML = data.length === 0 ? '<div class="p-4 text-xs text-center text-slate-400">No hay notificaciones pendientes</div>' :
+                    data.map(n => `<div class="p-4 border-b text-xs hover:bg-slate-50 cursor-pointer" onclick="markRead(${n.id_notif})"><i class="fas fa-bell text-blue-500 mr-2"></i>${n.mensaje}</div>`).join('');
+            });
+        }
+        function toggleNotif() { document.getElementById('notif-panel').classList.toggle('hidden'); }
+        function markRead(id) { fetch('/api/notificaciones/marcar/' + id, {method: 'PUT'}).then(()=>fetchNotifs()); }
+
+        function preview(e) { const prev = document.getElementById('img-prev'); prev.innerHTML = ""; Array.from(e.target.files).forEach(f => { const r = new FileReader(); r.onload = ev => prev.innerHTML += `<img src="${ev.target.result}" class="w-12 h-12 rounded-lg object-cover">`; r.readAsDataURL(f); }); }
+
+        // --- ASESOR FORMULARIO ---
+        function saveTicket() {
+            const formData = new FormData();
+            formData.append('cliente', document.getElementById('c-nom').value);
+            formData.append('tel', document.getElementById('c-tel').value);
+            formData.append('email', document.getElementById('c-email').value);
+            formData.append('modelo', document.getElementById('c-mod').value);
+            formData.append('serie', document.getElementById('c-ser').value);
+            formData.append('falla', document.getElementById('c-fal').value);
+            const files = document.getElementById('file-input').files; for(let i=0; i<files.length; i++) formData.append('fotos', files[i]);
+
+            fetch('/api/tickets', { method: 'POST', body: formData }).then(res => res.json()).then(res => { 
+                if(res.success) { alert("Orden de Servicio guardada exitosamente. El comprobante fue enviado al cliente."); location.reload(); } 
+            });
+        }
+
+        // --- TÉCNICO Y NUEVO FLUJO DE REPUESTOS ---
+        function loadTaller() {
+            fetch('/api/tickets/all').then(res => res.json()).then(data => {
+                const grid = document.getElementById('taller-grid');
+                grid.innerHTML = data.filter(t => t.id_estado != 8).map(t => {
+                    let actions = ""; const total = (parseFloat(t.costo_mo) + parseFloat(t.costo_rep)).toFixed(2);
+                    
+                    if(t.id_estado <= 2) {
+                        actions = `<button onclick="openDiag(${t.id_ticket}, '${t.telefono}', '${t.modelo_equipo}')" class="w-full bg-[#004085] text-white py-3 rounded-xl text-[10px] font-bold uppercase shadow-sm hover:bg-blue-900 transition">Ingresar Diagnóstico</button>`;
+                    }
+                    else if(t.id_estado == 3) {
+                        actions = `<p class="text-[9px] text-red-600 font-bold mb-2 text-center uppercase">Pausado: Faltan Repuestos</p>
+                                   <button onclick="updateState(${t.id_ticket}, 5)" class="w-full bg-green-600 text-white py-3 rounded-xl text-[10px] font-bold uppercase shadow-sm hover:bg-green-700 transition">Repuesto Recibido (Reanudar)</button>`;
+                    }
+                    else if(t.id_estado == 4) {
+                        actions = `<p class="text-[9px] text-orange-600 font-bold mb-2 text-center">ESPERANDO RESPUESTA DEL CLIENTE</p>
+                                   <button onclick="loadTaller()" class="w-full border border-slate-300 py-2 rounded-xl text-[10px] uppercase text-slate-500 font-bold hover:bg-slate-50">Actualizar Estado</button>`;
+                    }
+                    else if(t.id_estado == 5) {
+                        actions = `<div class="grid grid-cols-2 gap-2 mb-2">
+                                       <button onclick="waUpdate('${t.telefono}', '${t.modelo_equipo}')" class="bg-blue-600 text-white py-3 rounded-xl text-[9px] font-bold uppercase shadow-sm">Notificar Avance</button>
+                                       <button onclick="updateState(${t.id_ticket}, 3)" class="bg-orange-500 text-white py-3 rounded-xl text-[9px] font-bold uppercase shadow-sm">Falta Repuesto</button>
+                                   </div>
+                                   <button onclick="updateState(${t.id_ticket}, 7)" class="w-full bg-slate-800 text-white py-3 rounded-xl text-[10px] font-bold uppercase shadow-sm">Finalizar Trabajo</button>`;
+                    }
+                    else if(t.id_estado == 6) {
+                        actions = `<button onclick="updateState(${t.id_ticket}, 7)" class="w-full bg-slate-800 text-white py-3 rounded-xl text-[10px] font-bold uppercase shadow-sm">Preparar Devolución</button>`;
+                    }
+                    else if(t.id_estado == 7) {
+                        actions = `<div class="grid grid-cols-2 gap-2">
+                                       <button onclick="waReady('${t.telefono}', '${t.modelo_equipo}', '${total}')" class="bg-green-600 text-white py-3 rounded-xl text-[9px] font-bold uppercase shadow-sm">Notificar Retiro</button>
+                                       <button onclick="updateState(${t.id_ticket}, 8)" class="border-2 border-slate-300 py-3 rounded-xl text-[9px] font-bold uppercase hover:bg-slate-50">Registrar Entrega</button>
+                                   </div>`;
+                    }
+
+                    return `<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 ${t.dias > 25 ? 'diaco-alert border-red-400' : ''} flex flex-col justify-between"><div><div class="flex justify-between mb-2 items-center"><h4 class="font-black text-lg text-[#004085]">#${t.id_ticket}</h4><span class="text-[9px] font-bold uppercase px-2 py-1 bg-slate-100 rounded">${t.nombre_estado}</span></div><p class="font-bold text-sm mb-4 text-slate-700">${t.modelo_equipo}</p></div><div>${actions}</div></div>`;
+                }).join('');
+            });
+        }
+
+        function openDiag(id, tel, mod) { selTicket = {id, tel, mod}; document.getElementById('diag-id').innerText = "Orden #" + id; document.getElementById('diag-modal').style.display = 'flex'; }
+
+        function sendBudget() {
+            const d = { diagnostico: document.getElementById('d-hall').value, repuestos_txt: document.getElementById('d-reps').value, mo: document.getElementById('d-mo').value, rep: document.getElementById('d-rep').value };
+            fetch(`/api/tickets/${selTicket.id}/diagnostico`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).then(res => res.json()).then(res => {
+                if(res.success) {
+                    const total = (parseFloat(d.mo) + parseFloat(d.rep)).toFixed(2);
+                    const baseLink = window.location.origin; 
+                    
+                    const msg = `*ServiceTrack DX - Notificación de Diagnóstico*\n\nEstimado cliente, le informamos que hemos finalizado la evaluación técnica de su equipo: *${selTicket.mod}*.\n\n- *Diagnóstico Técnico:* ${d.diagnostico}\n- *Repuestos Requeridos:* ${d.repuestos_txt}\n- *Costo Total:* Q${total}\n\nPara proceder con la reparación, requerimos su autorización formal. Por favor, seleccione una opción haciendo clic en el enlace correspondiente:\n\n[ Opción 1: APROBAR PRESUPUESTO ]\n${baseLink}/api/chatbot/respuesta/${selTicket.id}/apruebo\n\n[ Opción 2: RECHAZAR PRESUPUESTO ]\n${baseLink}/api/chatbot/respuesta/${selTicket.id}/rechazo\n\n_Este es un mensaje automatizado generado por nuestro sistema operativo._`;
+                    
+                    window.open(`https://wa.me/${selTicket.tel}?text=${encodeURIComponent(msg)}`, '_blank');
+                    document.getElementById('diag-modal').style.display = 'none'; loadTaller();
+                }
+            });
+        }
+
+        function waUpdate(tel, mod) { 
+            const msg = `*ServiceTrack DX - Actualización de Estado*\n\nEstimado cliente, le informamos que su equipo *${mod}* se encuentra actualmente en proceso de reparación en nuestro taller.\n\nLe notificaremos inmediatamente cuando el trabajo esté finalizado. Gracias por su confianza.`;
+            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank'); 
+        }
+        
+        function waReady(tel, mod, total) { 
+            const msg = `*ServiceTrack DX - Notificación de Retiro*\n\nEstimado cliente, su equipo *${mod}* ha completado el proceso correspondiente y se encuentra listo para ser entregado.\n\n*Saldo pendiente a cancelar:* Q${total}\n\nLe esperamos en nuestra sucursal para realizar la entrega. Agradecemos su preferencia.`;
+            window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank'); 
+        }
+        
+        function updateState(id, id_estado) { fetch(`/api/tickets/${id}/estado`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({id_estado}) }).then(() => loadTaller()); }
+
+        // --- DASHBOARD GERENCIAL ---
+        let miGrafica = null;
+        function loadAdmin() {
+            fetch('/api/gerencia/kpis').then(res => res.json()).then(s => { 
+                document.getElementById('st-tot').innerText = s.totales; document.getElementById('st-dia').innerText = s.diaco; document.getElementById('st-din').innerText = 'Q' + s.dinero;
+                const ctx = document.getElementById('chartEstados').getContext('2d');
+                if(miGrafica) miGrafica.destroy();
+                miGrafica = new Chart(ctx, { type: 'doughnut', data: { labels: s.grafica_estados.map(e => e.nombre_estado), datasets: [{ data: s.grafica_estados.map(e => e.cantidad), backgroundColor: ['#004085', '#3b82f6', '#f59e0b', '#ef4444', '#10b981', '#64748b', '#8b5cf6', '#14b8a6'] }] }, options: { responsive: true, plugins: { legend: { position: 'bottom', labels:{font:{size:10}} }, title: { display: true, text: 'Distribución Operativa del Taller' } } } });
+            });
+            fetch('/api/tickets/all').then(res => res.json()).then(data => { document.getElementById('admin-list').innerHTML = data.map(t => `<div class="flex justify-between items-center p-3 border-b text-xs"><span class="font-bold">#${t.id_ticket} - ${t.modelo_equipo}</span><span class="text-[9px] bg-slate-100 px-2 rounded font-bold">${t.nombre_estado}</span></div>`).join(''); });
+        }
+    </script>
+</body>
+</html>
